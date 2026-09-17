@@ -33,7 +33,7 @@ Ainda não foi realizado um ensaio real de restauração: não havia PostgreSQL/
 - A API/PWA foram compiladas; o app Expo e os serviços Go precisam de build e testes próprios em ambiente compatível.
 - Os testes de banco usam PostgreSQL/WASM em memória. Repita-os contra a versão PostgreSQL do servidor, incluindo concorrência, conexões agrupadas e carga real.
 - A inspeção visual pelo navegador foi recusada nesta sessão; não há captura de tela nem validação visual certificada.
-- A instalação inicial de dependências informou quatro alertas de severidade alta. A consulta posterior ao registro npm foi bloqueada pela restrição de rede. Execute `npm audit`, identifique e corrija os pacotes envolvidos e repita os testes antes de publicar. Não execute atualizações com `--force` sem revisar incompatibilidades.
+- As dependências Node estão sem vulnerabilidades na validação atual (`npm audit --audit-level=high`). Repita essa verificação em cada atualização e revise incompatibilidades antes de usar atualizações forçadas.
 - As dependências Go da ponte Whatsmeow ainda precisam ser resolvidas e fixadas em `go.mod`/`go.sum`. O Dockerfile fixa a revisão upstream consultada; seu build não foi executado.
 - Não há um adaptador nativo de fabricante homologado, fila durável de eventos físicos no agente, motor de biometria, gravação de vídeo ou dialplan homologado para um PABX específico. A ponte AMI foi fornecida em código e precisa de configuração e teste real.
 - Múltiplas instâncias exigem revisão de rate limiting distribuído, registro de telefonia por operador e propriedade das sessões WhatsApp. Não publique várias réplicas do mesmo bridge contra o mesmo número.
@@ -43,3 +43,4 @@ Ainda não foi realizado um ensaio real de restauração: não havia PostgreSQL/
 ## Critério de aprovação
 
 O sistema pode ser liberado para clientes somente após: autenticação/MFA real, isolamento de tenants nos endpoints e mídia, homologação do hardware, chamada real com áudio bidirecional, pareamento WhatsApp, builds Android/iOS, verificação de acessibilidade/responsividade, auditoria de dependências corrigida e recuperação completa de backup.
+
