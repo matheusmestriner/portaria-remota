@@ -1,0 +1,7 @@
+services:
+  bridge:
+    build: .
+    env_file: .env
+    ports: ["127.0.0.1:8090:8090"]
+    restart: unless-stopped
+# Each company needs its own deployment/port, .env and exclusive SQL store.

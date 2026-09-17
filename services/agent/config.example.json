@@ -1,0 +1,1 @@
+{"api":"https://api.seudominio.com.br/v1","token":"TOKEN_EXIBIDO_NO_CADASTRO_DO_AGENTE","local_token":"SEGREDO_EXCLUSIVO_PARA_OS_DISPOSITIVOS_LOCAIS","listen":"127.0.0.1:8091","journal":"/var/lib/portaria/commands.json","devices":{}}

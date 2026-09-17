@@ -1,0 +1,10 @@
+; Generated from real companies, access points and operators.
+;
+; [company-abc-inbound]
+; exten => 7001,1,Set(PORTARIA_ACCESS_ID=REAL_ACCESS_UUID)
+;  same => n,Gosub(portaria-notify,s,1(${PORTARIA_ACCESS_ID},ringing,${UNIQUEID}))
+;  same => n,Gosub(portaria-queue,s,1(company_abc,20))
+;
+; [company-abc-operators]
+; exten => 9001,1,Dial(PJSIP/company_abc_operator_1,20)
+;  same => n,Hangup()

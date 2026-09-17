@@ -1,0 +1,9 @@
+; AMI account for the telephony bridge. Generate a real secret and restrict IP.
+;
+; [portaria_events]
+; secret=GENERATE_A_LONG_RANDOM_SECRET
+; deny=0.0.0.0/0.0.0.0
+; permit=10.20.0.15/255.255.255.255
+; read=system,call,reporting
+; write=none
+; writetimeout=1000

@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/.next
+**/dist
+.test-build
+.tools-build
+.env
+**/.env
+backups
+secrets
+services/**/config.json
+.git

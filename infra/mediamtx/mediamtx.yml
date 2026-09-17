@@ -1,0 +1,23 @@
+# Public access ONLY through a TLS reverse proxy. Camera sources stay on VPN.
+logLevel: warn
+authMethod: http
+authHTTPAddress: http://api:4000/v1/internal/media/auth
+authHTTPExclude: []
+api: false
+metrics: true
+metricsAddress: :9998
+rtsp: true
+rtspAddress: :8554
+rtmp: false
+hls: false
+webrtc: true
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+# Origin alone grants no access: each read requires a short-lived scoped token.
+webrtcAllowOrigins: ['*']
+pathDefaults:
+  sourceOnDemand: true
+  record: false
+# Add only REAL camera paths: <company UUID>/<stream_path>.
+# source: rtsp://USER:PASSWORD@PRIVATE_CAMERA_IP/STREAM
+paths: {}

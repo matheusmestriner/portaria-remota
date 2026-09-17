@@ -1,0 +1,29 @@
+; Copy generated real records to pjsip-clients.conf. Never commit passwords.
+; One endpoint/auth/aor set belongs to exactly one company and operator.
+;
+; [company_slug-operator_subject]
+; type=endpoint
+; accountcode=company_uuid
+; auth=company_slug-operator_subject-auth
+; aors=company_slug-operator_subject-aor
+; context=portaria-operators
+; callerid="Operator Name" <9001>
+; webrtc=yes
+; disallow=all
+; allow=opus,ulaw
+; direct_media=no
+; rtp_symmetric=yes
+; force_rport=yes
+; rewrite_contact=yes
+;
+; [company_slug-operator_subject-auth]
+; type=auth
+; auth_type=userpass
+; username=9001
+; password=GENERATE_A_LONG_RANDOM_SECRET
+;
+; [company_slug-operator_subject-aor]
+; type=aor
+; max_contacts=1
+; remove_existing=yes
+; qualify_frequency=30

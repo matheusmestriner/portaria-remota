@@ -1,0 +1,3 @@
+package main
+import("testing";"os")
+func TestOnlyConfiguredAccessCanProduceEvent(t *testing.T){b:=Bridge{bindings:map[string]Binding{"real-access":{Company:"company-a",Condo:"condo-a"}},spool:t.TempDir()};raw:=map[string]string{"event":"UserEvent","userevent":"PortariaCall","access":"unknown","kind":"ringing","callid":"call-1"};if _,ok:=b.translate(raw);ok{t.Fatal("unknown access authorized")};raw["access"]="real-access";e,ok:=b.translate(raw);if !ok||e.Company!="company-a"{t.Fatal("mapping failed")};if err:=b.persist(e);err!=nil{t.Fatal(err)};files,err:=os.ReadDir(b.spool);if err!=nil||len(files)!=1{t.Fatal("event not persisted")};raw["kind"]="open-door";if _,ok:=b.translate(raw);ok{t.Fatal("unknown event accepted")}}

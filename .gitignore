@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+.expo/
+.env
+.env.*.local
+*.tsbuildinfo
+coverage/
+.test-build/
+.tools-build/
+services/**/config.json
+infra/asterisk/*-clients.conf
+backups/
+secrets/
+*.log

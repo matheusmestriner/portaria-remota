@@ -1,0 +1,28 @@
+{
+ email {$ACME_EMAIL}
+ on_demand_tls {
+  ask http://api:4000/v1/internal/domain-allowed?key={$INTERNAL_KEY}
+ }
+}
+{$PUBLIC_HOST} {
+ encode zstd gzip
+ reverse_proxy web:3000
+}
+{$LOGIN_HOST} {
+ reverse_proxy keycloak:8080
+}
+{$API_HOSTNAME} {
+ @private path /v1/internal/* /docs*
+ respond @private 404
+ reverse_proxy api:4000
+}
+{$MEDIA_HOST} {
+ reverse_proxy mediamtx:8889
+}
+:443 {
+ tls {
+  on_demand
+ }
+ encode zstd gzip
+ reverse_proxy web:3000
+}

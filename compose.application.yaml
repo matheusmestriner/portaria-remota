@@ -1,0 +1,53 @@
+# Combine with compose.yaml for a LOCAL integration environment.
+# Public production ingress and identity storage require the deployment runbook.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.node
+    environment:
+      DATABASE_URL: postgres://portaria_runtime:${DB_APP_PASSWORD}@postgres:5432/portaria
+      DATA_KEY: ${DATA_KEY}
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_JWKS_URL: http://keycloak:8080/realms/portaria/protocol/openid-connect/certs
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL}
+      API_HOST: 0.0.0.0
+      WEB_ORIGINS: ${WEB_ORIGINS}
+      INTERNAL_KEY: ${INTERNAL_KEY}
+      WHATSAPP_KEY: ${WHATSAPP_KEY}
+      WHATSAPP_BRIDGES: ${WHATSAPP_BRIDGES:-{}}
+      DOMAIN_TARGET: ${DOMAIN_TARGET}
+      MEDIA_PUBLIC_URL: ${MEDIA_PUBLIC_URL:-}
+      SIP_WEBSOCKET_URL: ${SIP_WEBSOCKET_URL:-}
+      SIP_DOMAIN: ${SIP_DOMAIN:-}
+    ports: ["127.0.0.1:4000:4000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.node
+    command: ["npm", "run", "start", "-w", "apps/web"]
+    environment:
+      API_URL: http://api:4000
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      DOMAIN_TARGET: ${DOMAIN_TARGET}
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: [api]
+  worker:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.node
+    command: ["node", "apps/api/dist/worker.js"]
+    environment:
+      DATABASE_URL: postgres://portaria_runtime:${DB_APP_PASSWORD}@postgres:5432/portaria
+      DATA_KEY: ${DATA_KEY}
+      REDIS_URL: redis://redis:6379
+      DOMAIN_TARGET: ${DOMAIN_TARGET}
+    depends_on: [postgres,redis]
+  mediamtx:
+    image: bluenviron/mediamtx:1.21.0
+    profiles: [media]
+    volumes: ["./infra/mediamtx/mediamtx.yml:/mediamtx.yml:ro"]
+    ports: ["127.0.0.1:8889:8889", "8189:8189/udp"]

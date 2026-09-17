@@ -1,0 +1,24 @@
+services:
+  asterisk:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8088:8088"
+      - "127.0.0.1:8089:8089"
+      - "5060:5060/udp"
+      - "5061:5061/tcp"
+      - "10000-10100:10000-10100/udp"
+    volumes:
+      - ./pjsip-clients.conf:/etc/asterisk/pjsip-clients.conf:ro
+      - ./extensions-clients.conf:/etc/asterisk/extensions-clients.conf:ro
+      - ./manager-clients.conf:/etc/asterisk/manager-clients.conf:ro
+      - asterisk-spool:/var/spool/asterisk
+      - asterisk-log:/var/log/asterisk
+    healthcheck:
+      test: ["CMD-SHELL", "asterisk -rx 'core show uptime' >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+volumes:
+  asterisk-spool:
+  asterisk-log:

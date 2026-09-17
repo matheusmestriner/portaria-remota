@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"outDir":".test-build","rootDir":".","noEmit":false},"include":["tests/**/*.ts","apps/api/src/core.ts","apps/api/src/db.ts","apps/api/src/security.ts","apps/api/src/whatsapp.ts","apps/api/src/schemas.ts"]}

@@ -1,0 +1,1 @@
+{"expo":{"name":"Vértice Portaria","slug":"vertice-portaria","scheme":"portaria","version":"0.1.0","orientation":"portrait","userInterfaceStyle":"light","ios":{"supportsTablet":true,"bundleIdentifier":"br.com.vertice.portaria"},"android":{"package":"br.com.vertice.portaria"},"plugins":["expo-secure-store","expo-web-browser"],"extra":{"eas":{"projectId":""}}}}

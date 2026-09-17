@@ -1,0 +1,90 @@
+services:
+  - type: web
+    name: portaria-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build -w apps/api
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /v1/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATA_KEY
+        sync: false
+      - key: INTERNAL_KEY
+        generateValue: true
+      - key: WHATSAPP_KEY
+        generateValue: true
+      - key: OIDC_ISSUER
+        sync: false
+      - key: OIDC_JWKS_URL
+        sync: false
+      - key: PUBLIC_WEB_URL
+        fromService:
+          type: web
+          name: portaria-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: WEB_ORIGINS
+        fromService:
+          type: web
+          name: portaria-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: DOMAIN_TARGET
+        sync: false
+      - key: REDIS_URL
+        fromDatabase:
+          name: portaria-redis
+          property: connectionString
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "1"
+
+  - type: web
+    name: portaria-web
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build -w apps/web
+    startCommand: npm run start -w apps/web
+    healthCheckPath: /
+    envVars:
+      - key: API_URL
+        fromService:
+          type: web
+          name: portaria-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: OIDC_ISSUER
+        sync: false
+      - key: DOMAIN_TARGET
+        sync: false
+
+  - type: worker
+    name: portaria-worker
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build -w apps/api
+    startCommand: node apps/api/dist/worker.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATA_KEY
+        fromService:
+          type: web
+          name: portaria-api
+          envVarKey: DATA_KEY
+      - key: REDIS_URL
+        fromDatabase:
+          name: portaria-redis
+          property: connectionString
+      - key: DOMAIN_TARGET
+        sync: false
+
+databases:
+  - name: portaria-postgres
+    databaseName: portaria
+    user: portaria_admin
+    plan: free
+
+  - name: portaria-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru

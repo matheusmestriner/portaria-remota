@@ -1,0 +1,14 @@
+import { config } from 'dotenv';
+import { resolve } from 'node:path';
+import { Pool } from 'pg';
+import { Database } from './db';
+import { Auth } from './security';
+import { Core } from './core';
+import { WhatsAppFlow } from './whatsapp';
+config({path:resolve(process.cwd(),'.env'),quiet:true});
+config({path:resolve(process.cwd(),'../../.env'),quiet:true});
+export const env=process.env;
+export const db=new Database(new Pool({connectionString:env.DATABASE_URL,max:15}));
+export const auth=new Auth(db,env.OIDC_ISSUER||'http://localhost:8080/realms/portaria','portaria-api',env.OIDC_JWKS_URL);
+export const core=new Core(env.DATA_KEY||'',env.PUBLIC_WEB_URL||'http://localhost:3000');
+export const whatsapp=new WhatsAppFlow(core,env.DATA_KEY||'');
