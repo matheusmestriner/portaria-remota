@@ -16,7 +16,9 @@ async function main(){
  const app=await NestFactory.create(AppModule,{bodyParser:true});if(env.TRUST_PROXY==='1')app.getHttpAdapter().getInstance().set('trust proxy',1);app.use(helmet());app.useGlobalFilters(new Errors());
  app.enableCors({origin:(env.WEB_ORIGINS||'http://localhost:3000,http://127.0.0.1:3000').split(','),allowedHeaders:['Authorization','Content-Type','X-Company-Id'],methods:['GET','POST','PATCH','OPTIONS']});
  const rate=new Map<string,{start:number,n:number}>();app.use((req:any,res:any,next:any)=>{const key=req.ip;const now=Date.now();if(rate.size>10000)for(const [k,v]of rate)if(now-v.start>60000)rate.delete(k);const item=rate.get(key);if(!item||now-item.start>60000){rate.set(key,{start:now,n:1});return next();}if(++item.n>240)return res.status(429).json({message:'Muitas solicitações. Aguarde um minuto.'});next();});
- const document=SwaggerModule.createDocument(app,new DocumentBuilder().setTitle('Portaria API').setDescription('API v1. Operações de empresa exigem X-Company-Id. Esquemas de entrada são validados no servidor.').setVersion('1.0').addBearerAuth().build());SwaggerModule.setup('docs',app,document);
+ if(env.ENABLE_API_DOCS==='1' && env.NODE_ENV!=='production'){const document=SwaggerModule.createDocument(app,new DocumentBuilder().setTitle('Portaria API').setDescription('API v1. Operações de empresa exigem X-Company-Id. Esquemas de entrada são validados no servidor.').setVersion('1.0').addBearerAuth().build());SwaggerModule.setup('docs',app,document);}
  app.enableShutdownHooks();await app.listen(Number(process.env.PORT||env.API_PORT||4000),env.API_HOST||'0.0.0.0');
 }
 main().catch(e=>{console.error(e.message);process.exitCode=1;});
+
+
