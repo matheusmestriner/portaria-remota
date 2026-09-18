@@ -5,18 +5,51 @@ import { interval,mergeMap,startWith } from 'rxjs';
 import { z } from 'zod';
 import { resolveTxt,resolveCname } from 'node:dns/promises';
 import { timingSafeEqual } from 'node:crypto';
+import { Pool } from 'pg';
 import { db,auth,core,env,whatsapp } from './runtime';
 import { one,type Scope,type Sql } from './db';
 import { hash,token,requireRole } from './security';
 import { admins,operators } from './core';
 import { uuid,companySchema,brandSchema,membershipSchema,recordSchemas } from './schemas';
 export function secret(actual:string|undefined,expected:string|undefined){if(!actual||!expected||Buffer.byteLength(actual)!==Buffer.byteLength(expected)||!timingSafeEqual(Buffer.from(actual),Buffer.from(expected)))throw new UnauthorizedException();}
+const setupPool=env.MIGRATION_DATABASE_URL?new Pool({connectionString:env.MIGRATION_DATABASE_URL,max:2}):null;
+async function setupState(){
+ let database=false,authentication=false,adminCreated:null|boolean=null;
+ try{await db.pool.query('SELECT 1');database=true;}catch{}
+ try{const base=(env.OIDC_ISSUER||'').split('/realms/')[0];if(base){const response=await fetch(`${base}/realms/portaria/.well-known/openid-configuration`,{signal:AbortSignal.timeout(2500)});authentication=response.ok;}}catch{}
+ if(setupPool)try{adminCreated=Number((await setupPool.query('SELECT count(*) n FROM platform_admins')).rows[0].n)>0;}catch{}
+ const tasks=Boolean(env.REDIS_URL);
+ return{infrastructure:{database,authentication,tasks,ready:database&&authentication&&tasks},admin_created:adminCreated,bootstrap_available:Boolean(setupPool&&env.KC_BOOTSTRAP_ADMIN_USERNAME&&env.KC_BOOTSTRAP_ADMIN_PASSWORD),setup_token_required:env.NODE_ENV==='production'};
+}
 export async function tenant<T>(req:Request,fn:(q:Sql,s:Scope)=>Promise<T>){const identity=await auth.identity(req.headers.authorization);const company=uuid.parse(req.headers['x-company-id']);const s=await auth.scope(identity,company);return db.transaction(s,async q=>{const c=await one(q,'SELECT status FROM companies WHERE id=$1',[company]);if(!c||c.status==='suspended')throw new ForbiddenException('Empresa indisponível.');return fn(q,s);});}
 async function platform<T>(req:Request,fn:(q:Sql,s:Scope)=>Promise<T>){const id=await auth.identity(req.headers.authorization);if(!id.platform)throw new ForbiddenException();const s:Scope={subject:id.subject,platform:true};return db.transaction(s,q=>fn(q,s));}
 export async function agent<T>(req:Request,fn:(q:Sql,s:Scope)=>Promise<T>){const value=req.headers.authorization?.replace(/^Bearer /,'');if(!value)throw new UnauthorizedException();return db.transaction({subject:'agent'},async q=>{const a=await one(q,'SELECT * FROM app.resolve_agent($1)',[hash(value)]);if(!a)throw new UnauthorizedException();const s:Scope={subject:`agent:${a.id}`,company:a.company_id,role:'agent',condos:[a.condo_id]};await q.query("SELECT set_config('app.company',$1,true),set_config('app.role','agent',true),set_config('app.condos',$2,true),set_config('app.subject',$3,true)",[s.company,a.condo_id,s.subject]);await q.query('UPDATE agent_keys SET last_seen=now() WHERE id=$1',[a.id]);return fn(q,s);});}
 @ApiTags('Plataforma') @ApiBearerAuth() @Controller('v1')
 export class ApiController {
  @Get('health') async health(){await db.pool.query('SELECT 1');return{status:'ok'};}
+ @Get('setup/status') setupStatus(){return setupState();}
+ @Post('setup/admin') async setupAdmin(@Req() req:Request,@Body() body:any){
+  const b=z.object({name:z.string().trim().min(2).max(120),email:z.string().trim().email().max(254),password:z.string().min(14).max(200)}).strict().parse(body);
+  const state=await setupState();
+  if(!state.infrastructure.ready)throw new ConflictException('Conecte banco de dados, autenticação e tarefas antes de criar a conta.');
+  if(state.admin_created)throw new ConflictException('O administrador inicial já foi criado. Entre com sua conta.');
+  if(!state.bootstrap_available||!setupPool)throw new ConflictException('Configure as credenciais de bootstrap da infraestrutura.');
+  const local=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.ip||'');
+  if(env.NODE_ENV==='production'||!local)secret(req.headers['x-setup-token'] as string,env.SETUP_TOKEN);
+  const base=(env.OIDC_ISSUER||'').split('/realms/')[0];const q=await setupPool.connect();let subject:string|undefined,headers:Record<string,string>|undefined;
+  try{
+   await q.query('BEGIN');await q.query('SELECT pg_advisory_xact_lock(924432)');
+   if(Number((await q.query('SELECT count(*) n FROM platform_admins')).rows[0].n)>0)throw new ConflictException('O administrador inicial já foi criado. Entre com sua conta.');
+   const form=new URLSearchParams({client_id:'admin-cli',grant_type:'password',username:env.KC_BOOTSTRAP_ADMIN_USERNAME!,password:env.KC_BOOTSTRAP_ADMIN_PASSWORD!});
+   const login=await fetch(`${base}/realms/master/protocol/openid-connect/token`,{method:'POST',body:form,signal:AbortSignal.timeout(5000)});
+   if(!login.ok)throw new ConflictException('A autenticação administrativa ainda não está disponível.');
+   const {access_token}=await login.json() as {access_token:string};headers={Authorization:`Bearer ${access_token}`,'Content-Type':'application/json'};
+   const created=await fetch(`${base}/admin/realms/portaria/users`,{method:'POST',headers,body:JSON.stringify({username:b.email,email:b.email,firstName:b.name,enabled:true,emailVerified:true,credentials:[{type:'password',value:b.password,temporary:true}],requiredActions:['UPDATE_PASSWORD','CONFIGURE_TOTP']}),signal:AbortSignal.timeout(5000)});
+   if(!created.ok)throw new ConflictException(created.status===409?'Este e-mail já está cadastrado.':'Não foi possível criar o administrador na autenticação.');
+   subject=created.headers.get('location')?.split('/').pop();if(!subject)throw new ConflictException('A autenticação não retornou o identificador da conta.');
+   await q.query('INSERT INTO platform_admins(subject) VALUES($1)',[subject]);await q.query('COMMIT');return{created:true,email:b.email,next:'login'};
+  }catch(error){await q.query('ROLLBACK').catch(()=>{});if(subject&&headers)await fetch(`${base}/admin/realms/portaria/users/${subject}`,{method:'DELETE',headers}).catch(()=>{});throw error;}finally{q.release();}
+ }
  @Get('me') me(@Req() req:Request){return auth.identity(req.headers.authorization);}
  @Get('companies') companies(@Req() req:Request){return platform(req,q=>q.query('SELECT * FROM companies ORDER BY created_at DESC').then(r=>r.rows));}
  @Post('companies') @ApiOperation({summary:'Cadastrar empresa real, sem dados de demonstração'}) createCompany(@Req() req:Request,@Body() body:any){const b=companySchema.parse(body);return platform(req,q=>one(q,'INSERT INTO companies(name,slug) VALUES($1,$2) RETURNING *',[b.name,b.slug]));}

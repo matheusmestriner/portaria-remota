@@ -9,12 +9,20 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: MIGRATION_DATABASE_URL
+        sync: false
       - key: DATA_KEY
         sync: false
       - key: INTERNAL_KEY
         generateValue: true
       - key: WHATSAPP_KEY
         generateValue: true
+      - key: SETUP_TOKEN
+        generateValue: true
+      - key: KC_BOOTSTRAP_ADMIN_USERNAME
+        sync: false
+      - key: KC_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
       - key: OIDC_ISSUER
         sync: false
       - key: OIDC_JWKS_URL
@@ -88,3 +96,4 @@ databases:
   - name: portaria-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+

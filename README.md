@@ -43,9 +43,11 @@ npm run db:migrate
 npm run bootstrap
 ```
 
-`env:init` cria `.env` com segredos aleatórios e recusa sobrescrever um arquivo existente. `db:migrate` cria tabelas, políticas e o login PostgreSQL restrito usado pela API. A URL administrativa de migração nunca deve ser disponibilizada ao processo da API.
+`env:init` cria `.env` com segredos aleatórios e recusa sobrescrever um arquivo existente. `db:migrate` cria tabelas, políticas e o login PostgreSQL restrito usado pela API.
 
 O bootstrap solicita seu e-mail real e cadastra exclusivamente sua conta. No Keycloak, configure SMTP e envie ao usuário as ações **verificar e-mail, definir senha e configurar TOTP**. Complete o fluxo recebido por e-mail. As credenciais administrativas da infraestrutura ficam em `.env`; não estão no código.
+
+O assistente **Prepare sua plataforma** também verifica banco, autenticação e tarefas e permite criar o primeiro administrador pelo painel. Em produção, essa ação exige o `SETUP_TOKEN`, funciona somente enquanto não existe administrador e exige temporariamente `MIGRATION_DATABASE_URL` e as credenciais administrativas do Keycloak no serviço da API. Remova `MIGRATION_DATABASE_URL`, `KC_BOOTSTRAP_ADMIN_USERNAME`, `KC_BOOTSTRAP_ADMIN_PASSWORD` e `SETUP_TOKEN` do serviço após concluir o primeiro acesso. O comando `npm run bootstrap` continua disponível como alternativa operacional.
 
 Depois, inicie em terminais separados:
 
@@ -70,7 +72,7 @@ O Compose base utiliza `start-dev` e armazenamento local do Keycloak: **é uma c
 1. Entre na plataforma e clique em **Novo cliente**.
 2. Cadastre a empresa real. O estado inicial é “Em configuração”.
 3. Ao acessar sua operação como administrador da plataforma, informe o motivo do suporte. O acesso é auditado e dura 30 minutos.
-4. Configure nome, logotipo HTTPS e cor em **White label**.
+4. Configure nome e logotipo HTTPS em **White label**. A interface permanece em preto e branco.
 5. Adicione o domínio e os registros TXT/CNAME apresentados. O worker verifica HTTPS usando o domínio e o destino configurados.
 6. Após DNS e HTTPS válidos, execute `npm run domain:authorize -- portaria.cliente.com.br`. Isso autoriza somente esse domínio no login do Keycloak.
 7. Crie o usuário administrador da empresa no Keycloak e vincule seu identificador em **Equipe e permissões**.
@@ -130,3 +132,4 @@ docs              Contratos, implantação e validação
 ```
 
 O nome Vértice é uma identidade inicial substituível. O projeto não inclui registro de marca, hospedagem contratada, domínio, publicação em lojas nem equipamentos físicos.
+
