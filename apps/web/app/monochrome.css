@@ -1,0 +1,88 @@
+:root{
+  --accent:#000;
+  --ink:#111;
+  --muted:#6b6b6b;
+  --line:#dedede;
+  --surface:#fff;
+  --sidebar:#000;
+  --klyvero-primary:#000;
+  --klyvero-secondary:#000;
+  --klyvero-success:#111;
+  --klyvero-background:#f5f5f5;
+  --klyvero-card:#fff;
+  --klyvero-text:#111;
+  --klyvero-muted:#6b6b6b;
+  --klyvero-border:#dedede;
+  --klyvero-danger:#111;
+}
+
+body{background:#f5f5f5;color:#111}
+.sidebar{background:#000;color:#fff}
+.workspace-switch{background:#111;border-color:#333}.workspace-icon{background:#fff;color:#000}
+.nav-group>p,.workspace-switch small,.security-note p,.profile small{color:#aaa}
+.nav-item{color:#ccc}.nav-item:hover:not(.selected){background:#1d1d1d;color:#fff}
+.nav-item.selected{background:#fff;color:#000;box-shadow:none}.nav-dot{border-color:#fff}
+.security-note{border-color:#333}.security-note>span{color:#fff}.profile{background:#111;color:#fff}
+.topbar{background:#fffffff2}.breadcrumb,.connection,.icon-button{color:#666}.breadcrumb strong{color:#111}
+.connection i,.connection.online i{background:#111}.top-avatar,.avatar{background:#fff;color:#000;border-color:#ccc}
+.icon-button:hover{background:#eee;color:#000}
+.eyebrow,.text-button,.tabs button.active,.subnav button.active,.setup-banner button{color:#000}
+.btn.primary{background:#000;color:#fff;box-shadow:none}.btn.secondary{background:#fff;color:#111;border-color:#ccc}
+.btn.danger{background:#fff;color:#111;border-color:#111}
+.stat-card svg,.setup-icon,.quick-icon,.modal-symbol,.integration-icon,.illustration-card,.illustration-plus{color:#111}
+.welcome-card{background:linear-gradient(135deg,#fff,#f2f2f2 58%,#e5e5e5);border-color:#d0d0d0}
+.welcome-copy h2,.welcome-copy button{color:#111}.welcome-copy button{border-color:#111}
+.light-pill{background:#fff;border-color:#ccc;color:#111}.light-pill span{background:#000}
+.orbit{border-color:#bbb}.building{border-color:#aaa;background:linear-gradient(120deg,#fff,#ddd)}
+.building i{border-color:#999;background:linear-gradient(130deg,#aaa,#eee)}
+.building.back{background:#ddd}.building.front{background:linear-gradient(110deg,#fff,#e5e5e5)}
+.building-door{border-color:#999;background:#ccc}.art-badge,.art-label{background:#fff;border-color:#bbb;color:#111}
+.art-label span,.ground-line{background:#111}
+.setup-banner,.note,.muted-pill,.tag,.tag.green,.subnav button.active,.copy-code{background:#f2f2f2;border-color:#d7d7d7;color:#555}
+.setup-icon,.quick-icon,.modal-symbol,.integration-icon,.step-number,.step-number.done,.illustration-orbit,.illustration-plus{background:#eee;border-color:#d5d5d5;color:#111}
+.illustration-card{border-color:#ccc}.field input:focus,.field select:focus{border-color:#000;box-shadow:0 0 0 3px #00000018}
+.company-cell>span,.brand-preview{background:#000;color:#fff}
+.alert.error,.alert.success,.field-error{background:#f2f2f2;color:#111;border-color:#bbb}
+.camera-surface,.camera-error{background:#111;color:#ddd}.modal-backdrop{background:#0009}
+.error-page{background:radial-gradient(circle at 50% 35%,#fff 0,#f2f2f2 46%)}
+.error-mark{background:#fff;border-color:#ccc;color:#000}.error-page h1{color:#111}.error-page p,.error-code,.error-back{color:#666}
+.wordmark img{filter:grayscale(1)}
+
+html[data-theme="dark"]{
+  --accent:#fff;
+  --ink:#fff;
+  --muted:#aaa;
+  --line:#333;
+  --surface:#090909;
+  --sidebar:#000;
+  --klyvero-primary:#fff;
+  --klyvero-secondary:#000;
+  --klyvero-background:#000;
+  --klyvero-card:#090909;
+  --klyvero-text:#fff;
+  --klyvero-muted:#aaa;
+  --klyvero-border:#333;
+  --klyvero-danger:#fff;
+}
+html[data-theme="dark"] body{background:#000;color:#fff}
+html[data-theme="dark"] .sidebar{background:#000}
+html[data-theme="dark"] .topbar,html[data-theme="dark"] .card,html[data-theme="dark"] .stat-card,html[data-theme="dark"] .modal,html[data-theme="dark"] .guest-card{background:#090909;border-color:#333}
+html[data-theme="dark"] .breadcrumb strong,html[data-theme="dark"] h1,html[data-theme="dark"] h2,html[data-theme="dark"] h3{color:#fff}
+html[data-theme="dark"] .icon-button,html[data-theme="dark"] .connection,html[data-theme="dark"] .breadcrumb{color:#aaa}
+html[data-theme="dark"] .icon-button:hover{background:#222;color:#fff}
+html[data-theme="dark"] .nav-item.selected{background:#fff;color:#000}
+html[data-theme="dark"] .btn.primary{background:#fff;color:#000}
+html[data-theme="dark"] .btn.secondary,html[data-theme="dark"] .btn.danger,html[data-theme="dark"] .field input,html[data-theme="dark"] .field select,html[data-theme="dark"] .search,html[data-theme="dark"] .scope-bar select{background:#111;color:#fff;border-color:#444}
+html[data-theme="dark"] .eyebrow,html[data-theme="dark"] .text-button,html[data-theme="dark"] .tabs button.active,html[data-theme="dark"] .subnav button.active{color:#fff}
+html[data-theme="dark"] .welcome-card{background:linear-gradient(135deg,#222,#0b0b0b 62%,#000);border-color:#444}
+html[data-theme="dark"] .welcome-copy h2,html[data-theme="dark"] .welcome-copy button{color:#fff;border-color:#fff}
+html[data-theme="dark"] .light-pill{background:#111;border-color:#444;color:#fff}
+html[data-theme="dark"] .light-pill span{background:#fff}
+html[data-theme="dark"] .setup-banner,html[data-theme="dark"] .note,html[data-theme="dark"] .muted-pill,html[data-theme="dark"] .tag,html[data-theme="dark"] .tag.green,html[data-theme="dark"] .subnav button.active,html[data-theme="dark"] .copy-code{background:#151515;border-color:#333;color:#ccc}
+html[data-theme="dark"] .setup-icon,html[data-theme="dark"] .quick-icon,html[data-theme="dark"] .modal-symbol,html[data-theme="dark"] .integration-icon,html[data-theme="dark"] .step-number,html[data-theme="dark"] .step-number.done,html[data-theme="dark"] .illustration-orbit,html[data-theme="dark"] .illustration-plus{background:#1b1b1b;border-color:#444;color:#fff}
+html[data-theme="dark"] th{background:#111;color:#aaa;border-color:#333}html[data-theme="dark"] td,html[data-theme="dark"] td strong{color:#eee;border-color:#333}
+html[data-theme="dark"] .brand-preview,html[data-theme="dark"] .company-cell>span{background:#fff;color:#000}
+html[data-theme="dark"] .alert.error,html[data-theme="dark"] .alert.success,html[data-theme="dark"] .field-error{background:#161616;color:#fff;border-color:#555}
+html[data-theme="dark"] .error-page{background:radial-gradient(circle at 50% 35%,#222 0,#000 50%)}
+html[data-theme="dark"] .error-mark{background:#111;border-color:#444;color:#fff}
+
