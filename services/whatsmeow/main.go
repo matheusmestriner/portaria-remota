@@ -457,7 +457,7 @@ func (b *Bridge) send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providerID := string(response.ID)
+	providerID = string(response.ID)
 	_, _ = b.outbound.Exec(
 		"UPDATE portalia_outbound_messages SET status='sent',provider_message_id=$1,sent_at=now(),last_error=NULL WHERE request_key=$2",
 		providerID, in.RequestKey,
