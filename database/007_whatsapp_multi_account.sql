@@ -10,7 +10,8 @@ CREATE TABLE whatsapp_accounts (
  created_at timestamptz NOT NULL DEFAULT now(),
  updated_at timestamptz NOT NULL DEFAULT now(),
  FOREIGN KEY(company_id,condo_id) REFERENCES condos(company_id,id),
- UNIQUE(company_id,bridge_key)
+ UNIQUE(company_id,bridge_key),
+ UNIQUE(company_id,id)
 );
 
 CREATE UNIQUE INDEX whatsapp_accounts_default_unique
@@ -53,6 +54,9 @@ ALTER TABLE whatsapp_messages ALTER COLUMN account_id SET NOT NULL;
 ALTER TABLE whatsapp_messages
  ADD CONSTRAINT whatsapp_messages_account_fk
  FOREIGN KEY(account_id) REFERENCES whatsapp_accounts(id);
+ALTER TABLE whatsapp_messages
+ ADD CONSTRAINT whatsapp_messages_account_company_fk
+ FOREIGN KEY(company_id,account_id) REFERENCES whatsapp_accounts(company_id,id);
 ALTER TABLE whatsapp_messages DROP CONSTRAINT whatsapp_messages_pkey;
 ALTER TABLE whatsapp_messages
  ADD PRIMARY KEY(company_id,account_id,message_id);
@@ -66,9 +70,26 @@ ALTER TABLE whatsapp_flows ALTER COLUMN account_id SET NOT NULL;
 ALTER TABLE whatsapp_flows
  ADD CONSTRAINT whatsapp_flows_account_fk
  FOREIGN KEY(account_id) REFERENCES whatsapp_accounts(id);
+ALTER TABLE whatsapp_flows
+ ADD CONSTRAINT whatsapp_flows_account_company_fk
+ FOREIGN KEY(company_id,account_id) REFERENCES whatsapp_accounts(company_id,id);
 ALTER TABLE whatsapp_flows DROP CONSTRAINT whatsapp_flows_pkey;
 ALTER TABLE whatsapp_flows
  ADD PRIMARY KEY(company_id,account_id,sender);
+
+CREATE POLICY whatsapp_messages_condo_scope ON whatsapp_messages AS RESTRICTIVE
+ USING(EXISTS(
+  SELECT 1 FROM whatsapp_accounts a
+  WHERE a.id=account_id AND a.company_id=whatsapp_messages.company_id
+    AND (a.condo_id IS NULL OR app.can_condo(a.condo_id))
+ ));
+
+CREATE POLICY whatsapp_flows_condo_scope ON whatsapp_flows AS RESTRICTIVE
+ USING(EXISTS(
+  SELECT 1 FROM whatsapp_accounts a
+  WHERE a.id=account_id AND a.company_id=whatsapp_flows.company_id
+    AND (a.condo_id IS NULL OR app.can_condo(a.condo_id))
+ ));
 
 CREATE INDEX whatsapp_accounts_scope_idx ON whatsapp_accounts(company_id,condo_id,status);
 CREATE INDEX whatsapp_messages_account_idx ON whatsapp_messages(company_id,account_id,created_at DESC);
