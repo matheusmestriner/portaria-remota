@@ -55,7 +55,7 @@ O relatório JSON deve conter `manufacturer`, `model`, `firmware`, `operator`, `
 
 Execute uma ponte por cliente, com banco ou schema exclusivo e usuário SQL restrito àquele armazenamento. Não utilize a conexão administrativa da plataforma. Preencha as variáveis em `services/whatsmeow/.env.example` e configure `WHATSAPP_BRIDGES` na API como um mapa JSON de UUID real de empresa para URL interna da ponte.
 
-Abra **Integrações → WhatsApp → Configurar → Iniciar conexão**. O QR aparece somente para administradores autorizados. Confirme a vinculação no celular que possui o número. Os dados de sessão persistem no SQL store do Whatsmeow.
+Abra **Integrações → WhatsApp → Configurar**. O administrador pode escolher **QR Code** ou **Código de pareamento**. No modo QR, o código visual aparece somente para administradores autorizados. No modo código, informe o número em formato E.164, por exemplo `+5511999999999`; a ponte conecta ao WhatsApp, espera o handshake inicial e chama `PairPhone`, retornando um código temporário. O código deve ser informado no WhatsApp do número escolhido antes de expirar. Os dados de sessão persistem no SQL store do Whatsmeow. O código de pareamento é efêmero e não é persistido no banco da plataforma.
 
 O morador gera um código no app/web e envia `VINCULAR <código>` ao número da portaria. O código expira em dez minutos. Depois envia `CONVITE`, escolhe unidade, informa convidado, início/fim, placa opcional, acesso e confirma. A conversa expira após quinze minutos de inatividade e aceita `CANCELAR`.
 
