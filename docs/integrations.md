@@ -53,7 +53,7 @@ O relatório JSON deve conter `manufacturer`, `model`, `firmware`, `operator`, `
 
 ## Whatsmeow
 
-Execute uma ponte por cliente, com banco ou schema exclusivo e usuário SQL restrito àquele armazenamento. Não utilize a conexão administrativa da plataforma. Preencha as variáveis em `services/whatsmeow/.env.example` e configure `WHATSAPP_BRIDGES` na API como um mapa JSON de UUID real de empresa para URL interna da ponte.
+Execute um gateway Whatsmeow por revenda/tenant, com banco ou schema exclusivo e usuário SQL restrito àquela revenda. Não utilize a conexão administrativa da plataforma. Um gateway pode manter várias sessões simultâneas: uma conta padrão da revenda e uma conta independente para cada condomínio. Configure `WHATSAPP_BRIDGES` na API como um mapa JSON de UUID real da revenda para a URL interna do gateway.
 
 Abra **Integrações → WhatsApp → Configurar**. O administrador pode escolher **QR Code** ou **Código de pareamento**. No modo QR, o código visual aparece somente para administradores autorizados. No modo código, informe o número em formato E.164, por exemplo `+5511999999999`; a ponte conecta ao WhatsApp, espera o handshake inicial e chama `PairPhone`, retornando um código temporário. O código deve ser informado no WhatsApp do número escolhido antes de expirar. Os dados de sessão persistem no SQL store do Whatsmeow. O código de pareamento é efêmero e não é persistido no banco da plataforma.
 
@@ -68,6 +68,21 @@ A ponte também aceita envio ativo em `POST /send`, autenticado por `X-Service-K
 A API expõe `POST /v1/whatsapp/send` para administradores/supervisores e `POST /v1/internal/whatsapp/send` para serviços internos autenticados. Isso é a base para notificações transacionais, incluindo chegada e retirada de entregas. Não usar esse canal para disparos promocionais em massa.
 
 O bridge mantém uma fila em memória para mensagens recebidas. Uma interrupção pode exigir nova interação do morador; consulte a lista de convites antes de reenviar uma confirmação. Aprovação na chegada e comando de abertura pelo WhatsApp continuam desabilitados.
+
+
+### Hierarquia de contas
+
+A tela **Integrações → WhatsApp** lista `Número padrão da revenda` e todos os condomínios acessíveis ao administrador. Cada item pode ser pareado separadamente por QR Code ou código de pareamento. O banco da plataforma registra a conta em `whatsapp_accounts`, sempre com `company_id` e, quando específica, `condo_id`.
+
+Mensagens recebidas carregam o identificador interno da sessão. `whatsapp_messages` e `whatsapp_flows` usam `account_id`, portanto o mesmo morador pode conversar com dois números da revenda sem compartilhar o estado do bot entre as conversas. Em uma conta de condomínio, o bot só aceita moradores e unidades daquele condomínio.
+
+Para mensagens transacionais, como entrega recebida ou retirada, a API resolve a conta nesta ordem:
+
+1. conta conectada do condomínio;
+2. conta padrão conectada da revenda;
+3. se nenhuma estiver conectada, o envio falha de forma explícita e pode ser reprocessado pela fila.
+
+A revenda continua isolada das demais no nível da aplicação e também no gateway: cada revenda possui processo e armazenamento Whatsmeow próprios. Contas de condomínios diferentes compartilham apenas o gateway da própria revenda, nunca o gateway de outra revenda.
 
 ## Câmeras
 
