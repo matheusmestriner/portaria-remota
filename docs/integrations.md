@@ -61,7 +61,13 @@ O morador gera um código no app/web e envia `VINCULAR <código>` ao número da 
 
 O bridge ignora grupos, mensagens enviadas pelo próprio número, edições e mensagens antigas. Identificadores LID são resolvidos pelo armazenamento do Whatsmeow antes de procurar o número vinculado. Falha na resolução não autoriza acesso. Mensagens são deduplicadas no banco, e respostas com links ficam cifradas.
 
-O bridge mantém uma fila em memória. Uma interrupção pode exigir nova interação do morador; consulte a lista de convites antes de reenviar uma confirmação. Não há envio promocional, aprovação na chegada ou comando de abertura pelo WhatsApp.
+Após o pareamento, `GET /status` da ponte retorna o número autenticado em E.164 e a API persiste esse número como metadado não sensível da integração. O painel mostra qual número da portaria está conectado.
+
+A ponte também aceita envio ativo em `POST /send`, autenticado por `X-Service-Key`. Corpo: `to` em E.164, `text` e `request_key`. O `request_key` é persistido no banco exclusivo da ponte para impedir reenvio silencioso da mesma mensagem. Se houver falha ambígua depois da tentativa de envio, a chave fica em estado incerto e não é reenviada automaticamente com a mesma chave.
+
+A API expõe `POST /v1/whatsapp/send` para administradores/supervisores e `POST /v1/internal/whatsapp/send` para serviços internos autenticados. Isso é a base para notificações transacionais, incluindo chegada e retirada de entregas. Não usar esse canal para disparos promocionais em massa.
+
+O bridge mantém uma fila em memória para mensagens recebidas. Uma interrupção pode exigir nova interação do morador; consulte a lista de convites antes de reenviar uma confirmação. Aprovação na chegada e comando de abertura pelo WhatsApp continuam desabilitados.
 
 ## Câmeras
 
