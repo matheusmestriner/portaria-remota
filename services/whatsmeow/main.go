@@ -138,6 +138,17 @@ func must(err error) {
 
 func initGatewayTables(db *sql.DB) error {
 	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS portalia_outbound_messages (
+ request_key text PRIMARY KEY,
+ recipient text NOT NULL,
+ body_hash text NOT NULL,
+ status text NOT NULL CHECK(status IN ('pending','sent','unknown')),
+ provider_message_id text,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ sent_at timestamptz,
+ last_error text
+);
+
 CREATE TABLE IF NOT EXISTS portalia_whatsapp_sessions (
  account_key text PRIMARY KEY,
  condo_id text,
@@ -221,12 +232,6 @@ func (g *Gateway) session(ctx context.Context, key, condo string) (*Session, err
 	if !accountKeyPattern.MatchString(key) {
 		return nil, fmt.Errorf("invalid account key")
 	}
-	if condo != "" {
-		if _, err := types.ParseJID("1@" + types.DefaultUserServer); err != nil {
-			return nil, err
-		}
-	}
-
 	g.mu.Lock()
 	if existing := g.sessions[key]; existing != nil {
 		g.mu.Unlock()
