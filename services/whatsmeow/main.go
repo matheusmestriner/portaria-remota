@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	phonePattern      = regexp.MustCompile(`^\\+?[1-9][0-9]{7,14}$`)
+	phonePattern      = regexp.MustCompile(`^\+?[1-9][0-9]{7,14}$`)
 	phoneDigitsPattern = regexp.MustCompile(`^[1-9][0-9]{7,14}$`)
 	requestKeyPattern = regexp.MustCompile(`^[A-Za-z0-9:_-]{16,128}$`)
 )
