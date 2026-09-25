@@ -43,6 +43,9 @@ type Bridge struct {
 	mu         sync.Mutex
 	qr         string
 	qrUntil    time.Time
+	pairCode   string
+	pairPhone  string
+	pairUntil  time.Time
 	connecting bool
 	messages   chan *events.Message
 }
@@ -111,6 +114,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /connect", b.connect)
+	mux.HandleFunc("POST /pair-code", b.pairCodeConnect)
 	mux.HandleFunc("GET /status", b.status)
 	mux.HandleFunc("POST /send", b.send)
 	mux.HandleFunc("POST /disconnect", b.disconnect)
@@ -227,6 +231,9 @@ func (b *Bridge) event(evt any) {
 	case *events.Connected:
 		b.mu.Lock()
 		b.qr = ""
+		b.pairCode = ""
+		b.pairPhone = ""
+		b.pairUntil = time.Time{}
 		b.connecting = false
 		b.mu.Unlock()
 		b.reportStatus("connected")
@@ -236,6 +243,9 @@ func (b *Bridge) event(evt any) {
 		b.mu.Lock()
 		b.connecting = false
 		b.qr = ""
+		b.pairCode = ""
+		b.pairPhone = ""
+		b.pairUntil = time.Time{}
 		b.mu.Unlock()
 		b.reportStatus("logged_out")
 	}
@@ -300,6 +310,9 @@ func (b *Bridge) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	b.connecting = true
+	b.pairCode = ""
+	b.pairPhone = ""
+	b.pairUntil = time.Time{}
 	b.mu.Unlock()
 
 	if b.client.Store.ID != nil {
@@ -349,6 +362,120 @@ func (b *Bridge) connect(w http.ResponseWriter, r *http.Request) {
 	b.status(w, r)
 }
 
+func (b *Bridge) pairCodeConnect(w http.ResponseWriter, r *http.Request) {
+	if b.client.Store.ID != nil || b.client.IsLoggedIn() {
+		http.Error(w, "whatsapp already paired", http.StatusConflict)
+		return
+	}
+
+	var in struct {
+		Phone string `json:"phone"`
+	}
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&in); err != nil {
+		http.Error(w, "invalid payload", http.StatusBadRequest)
+		return
+	}
+	phone, _, err := normalizePhone(in.Phone)
+	if err != nil {
+		http.Error(w, "invalid phone", http.StatusBadRequest)
+		return
+	}
+
+	b.mu.Lock()
+	if b.connecting || b.client.IsConnected() {
+		b.mu.Unlock()
+		http.Error(w, "pairing already in progress", http.StatusConflict)
+		return
+	}
+	b.connecting = true
+	b.qr = ""
+	b.qrUntil = time.Time{}
+	b.pairCode = ""
+	b.pairPhone = phone
+	b.pairUntil = time.Time{}
+	b.mu.Unlock()
+
+	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+
+	ch, err := b.client.GetQRChannel(ctx)
+	if err != nil {
+		b.resetPairing()
+		http.Error(w, "pairing unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	if err = b.client.Connect(); err != nil {
+		b.resetPairing()
+		http.Error(w, "connection failed", http.StatusServiceUnavailable)
+		return
+	}
+
+	select {
+	case evt, ok := <-ch:
+		if !ok || evt.Event != "code" {
+			b.client.Disconnect()
+			b.resetPairing()
+			http.Error(w, "pairing handshake unavailable", http.StatusServiceUnavailable)
+			return
+		}
+	case <-ctx.Done():
+		b.client.Disconnect()
+		b.resetPairing()
+		http.Error(w, "pairing handshake timeout", http.StatusGatewayTimeout)
+		return
+	}
+
+	code, err := b.client.PairPhone(context.Background(), strings.TrimPrefix(phone, "+"), true, whatsmeow.PairClientChrome, "Chrome (Windows)")
+	if err != nil {
+		b.client.Disconnect()
+		b.resetPairing()
+		http.Error(w, "pairing code unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
+	expires := time.Now().Add(150 * time.Second)
+	b.mu.Lock()
+	b.pairCode = code
+	b.pairPhone = phone
+	b.pairUntil = expires
+	b.mu.Unlock()
+
+	go func() {
+		for range ch {
+		}
+		b.mu.Lock()
+		if b.client.Store.ID == nil {
+			b.connecting = false
+			b.pairCode = ""
+			b.pairPhone = ""
+			b.pairUntil = time.Time{}
+		}
+		b.mu.Unlock()
+	}()
+
+	writeJSON(w, map[string]any{
+		"company_id":     b.company,
+		"status":         "pairing",
+		"pairing_method": "code",
+		"phone":          phone,
+		"pair_code":      code,
+		"expires_at":     expires,
+	})
+}
+
+func (b *Bridge) resetPairing() {
+	b.mu.Lock()
+	b.connecting = false
+	b.qr = ""
+	b.qrUntil = time.Time{}
+	b.pairCode = ""
+	b.pairPhone = ""
+	b.pairUntil = time.Time{}
+	b.mu.Unlock()
+}
+
 func (b *Bridge) status(w http.ResponseWriter, r *http.Request) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -356,6 +483,13 @@ func (b *Bridge) status(w http.ResponseWriter, r *http.Request) {
 	qr := b.qr
 	if time.Now().After(b.qrUntil) {
 		qr = ""
+	}
+	pairCode := b.pairCode
+	pairPhone := b.pairPhone
+	pairUntil := b.pairUntil
+	if !pairUntil.IsZero() && time.Now().After(pairUntil) {
+		pairCode = ""
+		pairPhone = ""
 	}
 	state := "disconnected"
 	if b.client.IsConnected() && b.client.IsLoggedIn() {
@@ -366,9 +500,12 @@ func (b *Bridge) status(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"company_id":    b.company,
 		"status":        state,
-		"phone":         b.phone(),
-		"qr":            qr,
-		"qr_expires_at": b.qrUntil,
+		"phone":          b.phone(),
+		"qr":             qr,
+		"qr_expires_at":  b.qrUntil,
+		"pair_code":      pairCode,
+		"pair_phone":     pairPhone,
+		"pair_expires_at": pairUntil,
 	})
 }
 
@@ -481,6 +618,9 @@ func (b *Bridge) disconnect(w http.ResponseWriter, r *http.Request) {
 	b.client.Disconnect()
 	b.mu.Lock()
 	b.qr = ""
+	b.pairCode = ""
+	b.pairPhone = ""
+	b.pairUntil = time.Time{}
 	b.connecting = false
 	b.mu.Unlock()
 	b.reportStatus("disconnected")
